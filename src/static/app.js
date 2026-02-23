@@ -25,9 +25,33 @@ document.addEventListener("DOMContentLoaded", () => {
           <p>${details.description}</p>
           <p><strong>Schedule:</strong> ${details.schedule}</p>
           <p><strong>Availability:</strong> ${spotsLeft} spots left</p>
+          <p><strong>Participants:</strong></p>
+          <ul class="participants-list">
+            ${details.participants.map(p => `<li>${p}<span class="remove-participant" data-email="${p}">&times;</span></li>`).join("")}
+          </ul>
         `;
 
         activitiesList.appendChild(activityCard);
+
+        // attach delete handlers for each participant entry
+        activityCard.querySelectorAll('.remove-participant').forEach(span => {
+          span.addEventListener('click', async () => {
+            const email = span.getAttribute('data-email');
+            try {
+              const resp = await fetch(
+                `/activities/${encodeURIComponent(name)}/participants/${encodeURIComponent(email)}`,
+                { method: 'DELETE' }
+              );
+              if (resp.ok) {
+                fetchActivities();
+              } else {
+                console.error('Failed to remove', await resp.text());
+              }
+            } catch (err) {
+              console.error('Error removing participant', err);
+            }
+          });
+        });
 
         // Add option to select dropdown
         const option = document.createElement("option");
@@ -62,6 +86,8 @@ document.addEventListener("DOMContentLoaded", () => {
         messageDiv.textContent = result.message;
         messageDiv.className = "success";
         signupForm.reset();
+        // refresh activity list so the new participant appears immediately
+        fetchActivities();
       } else {
         messageDiv.textContent = result.detail || "An error occurred";
         messageDiv.className = "error";
